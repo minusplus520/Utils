@@ -1,0 +1,106 @@
+"*****************************************************************************************"
+"For coc-nvim
+"*****************************************************************************************"
+  let g:coc_global_extensions = [
+        \ 'coc-clangd',
+        \ 'coc-diagnostic',
+        \ 'coc-highlight',
+        \ 'coc-lists',
+        \ 'coc-marketplace',
+        \ ]
+  "let g:coc_global_extensions = [
+        "\ 'coc-clangd',
+        "\ 'coc-diagnostic',
+        "\ 'coc-dictionary',
+        "\ 'coc-eslint',
+        "\ 'coc-highlight',
+        "\ 'coc-jedi',
+        "\ 'coc-json',
+        "\ 'coc-lists',
+        "\ 'coc-marketplace',
+        "\ 'coc-pyright',
+        "\ 'coc-python',
+        "\ 'coc-rust-analyzer',
+        "\ 'coc-sh',
+        "\ 'coc-snippets',
+        "\ 'coc-tag',
+        "\ 'coc-terminal',
+        "\ 'coc-toml',
+        "\ 'coc-tsserver',
+        "\ 'coc-vimlsp',
+        "\ 'coc-word',
+        "\ ]
+"*****************************************************************************************"
+"For coc-nvim-lsp
+"*****************************************************************************************"
+" let b:coc_suggest_disable = 1
+"
+" function! CheckBackspace() abort
+"     let col = col('.') - 1
+"     return !col || getline('.')[col - 1]  =~# '\s'
+" endfunction
+" inoremap <silent><expr> <TAB>
+"       \ coc#pum#visible() ? coc#pum#next(1) :
+"       \ CheckBackspace() ? "\<Tab>" :
+"       \ coc#refresh()
+" inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+inoremap <silent><expr> <C-n> coc#refresh()
+
+nmap gd <Plug>(coc-definition)
+nmap gD :call CocActionAsync('jumpDefinition', v:false)<CR>
+nmap gr <Plug>(coc-references)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap ]d <Plug>(coc-diagnostic-next)
+nmap [d <Plug>(coc-diagnostic-prev)
+nmap ]e <Plug>(coc-diagnostic-next-error)
+nmap [e <Plug>(coc-diagnostic-prev-error)
+nnoremap <silent> K :call ShowDocumentation()<CR>
+function! ShowDocumentation()
+  if CocAction('hasProvider', 'hover')
+    call CocActionAsync('doHover')
+  else
+    call feedkeys('K', 'in')
+  endif
+endfunction
+
+nmap <silent> cal <plug>(coc-codeaction-line)
+nmap <silent> cac <plug>(coc-codeaction-cursor)
+
+" Formatting selected code
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+
+" use following to change default options in CocConfig
+" list.source.symbols.defaultOptions": ["--auto-preview", "--interactive"],
+" list.source.outline.defaultOptions": ["--auto-preview"],
+" list.source.diagnostics.defaultOptions": ["--auto-preview"]
+"
+
+" Mappings for CoCList
+" Show all diagnostics.
+"nnoremap <silent><nowait> <space>a  :<C-u>CocList --auto-preview diagnostics<cr>
+" Manage extensions.
+"nnoremap <silent><nowait> <space>e  :<C-u>CocList extensions<cr>
+" Show commands.
+"nnoremap <silent><nowait> <space>c  :<C-u>CocList commands<cr>
+" Find symbol of current document.
+"nnoremap <silent><nowait> <space>o  :<C-u>CocList --auto-preview outline<cr>
+" Search workspace symbols.
+"nnoremap <silent><nowait> <space>s  :<C-u>CocList --auto-preview --interactive symbols<cr>
+
+" Manage extensions.
+nnoremap <silent><nowait><space>e      :<C-u>CocFzfList extensions<cr>
+" Show all diagnostics.
+nnoremap <silent><nowait><space>a       :<C-u>CocFzfList diagnostics<CR>
+" Show commands.
+nnoremap <silent><nowait><space>c       :<C-u>CocFzfList commands<CR>
+" Find symbol of current document.
+nnoremap <silent><nowait><space>o       :<C-u>CocFzfList outline<CR>
+" Search workspace symbols.
+nnoremap <silent><nowait><space>s       :<C-u>CocFzfList symbols<CR>
+let g:coc_fzf_preview = ''
+let g:coc_fzf_opts = []
