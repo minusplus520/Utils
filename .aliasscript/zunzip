@@ -1,0 +1,28 @@
+#!/bin/csh
+
+if ( "$1" == "" ) then
+    echo "e.g.: zunzip [filename.zti]"
+    exit
+endif
+if ( ! -f "$1" ) then
+    echo "file:$1 not exist"
+    exit
+endif
+
+set post=".zti"
+
+if ( "$2" != "" ) then
+    set post=".$2"
+    echo "Set suffix as $post"
+endif
+
+
+if ( "$1" =~ *$post) then
+else
+    echo "file:$1 is not in $post format. Please adding suffix information"
+    exit
+endif
+set base=`basename $1 ${post}`
+mv $1 $base.gz
+gunzip $base.gz
+

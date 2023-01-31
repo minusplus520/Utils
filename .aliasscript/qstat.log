@@ -1,0 +1,8 @@
+qstat:
+job-ID     prior   name       user         state submit/start at     queue                          jclass                         slots ja-task-ID 
+------------------------------------------------------------------------------------------------------------------------------------------------
+ 495478755 0.64383 comp.csh   chenc        r     10/30/2018 10:27:30 q@vgzintbw-512g-1.internal.syn                                    1        
+ 494749422 0.03501 INTERACTIV chenc        r     10/29/2018 23:07:19 q@vgintiv57.internal.synopsys.                                    1        
+ 495524071 0.03501 tracerun.p chenc        r     10/30/2018 11:02:12 q@vginthw311.internal.synopsys                                    1        
+Time:
+Tue Oct 30 11:19:55 CST 2018

@@ -1,0 +1,7 @@
+#!/bin/csh
+regrun -product zebu -log . -diff_file ./diffs -use_stream_config TD.ZEBU
+
+
+# run failure list from previous run
+#regrun -product zebu -log /remote/vgscratch8/chenc/reg/ -f r_......../tmp/failure_list
+

@@ -1,0 +1,197 @@
+#!/bin/tcsh
+# Modified from Eric
+
+#set GridCmd1="qrsh -P zebucae_brcm_eval  -l mem_free=128G -cwd -V -noshell -now no -verbose"
+#set GridCmd2="qrsh -P zebucae_brcm_eval  -l mem_free=64G -cwd -V -noshell -now no -verbose"
+
+source /remote/sge/default/zebutrain/common/settings.csh
+set GridCmd1 = "qrsh -P zebuDev_largeMem -l mem_free=256G -cwd -V -noshell -now n"
+set GridCmd2 = "qrsh -P zebuDev_largeMem -l mem_free=128G -cwd -V -noshell -now n"
+set GridCmd3 = "qrsh -P zebuDev -l mem_free=32G -cwd -V -noshell -now n"
+
+# Flow switch
+set runzTopB        = 0
+set runzCoreB       = 0
+set runzPar         = 0
+set runzTime        = 0
+set runPDM          = 1
+set runDAP          = 1
+set runPDMTiming    = 1
+set runPnR          = 0
+
+# Initial Setting/Checking
+set myDir=`pwd`
+set db = "RTLDB"
+if ( ! -r "$db" ) then
+    echo "RTLDB not exist!"
+    exit
+endif
+
+if ( ! $?ZEBU_ROOT ) then
+    echo "ZEBU_ROOT not set!"
+    exit
+endif
+
+# Dump Log
+/bin/rm -rf BE_status.log
+echo "BackEnd Flow switch:"             | tee -a BE_status.log
+echo "runzTopBuild :" $runzTopB         | tee -a BE_status.log
+echo "runzCoreBuild:" $runzCoreB        | tee -a BE_status.log
+echo "runzPar      :" $runzPar          | tee -a BE_status.log
+echo "runzTime     :" $runzTime         | tee -a BE_status.log
+echo "runPDM       :" $runPDM           | tee -a BE_status.log
+echo "runDAP       :" $runDAP           | tee -a BE_status.log
+echo "runPDMTiming :" $runPDMTiming     | tee -a BE_status.log
+echo "runPnR       :" $runPnR           | tee -a BE_status.log
+
+# Start
+if ( $runzTopB == 1 ) then
+    if ( -f zTopBuild.log ) then
+        mv zTopBuild.log zTopBuild.log.gori
+    endif
+    echo $GridCmd1 zTopBuild zTopBuild.tcl
+    $GridCmd1 zTopBuild  zTopBuild.tcl
+    if ( { grep -q 'Successful execution' zTopBuild.log } ) then
+        echo "zTopBuild Done"           | tee -a $myDir/BE_status.log
+    else
+        echo "zTopBuild Failed"         | tee -a $myDir/BE_status.log
+    endif
+endif
+if ( $runzCoreB == 1 ) then
+    foreach dir(work.*)
+        cd $myDir/$dir
+        /bin/rm -rf see
+        if ( -f zCoreBuild.log ) then
+            mv zCoreBuild.log zCoreBuild.log.gori
+        endif
+        echo $GridCmd2 -N core$dir zCoreBuild zCoreBuild_ztb.tcl
+             $GridCmd2 -N core$dir zCoreBuild zCoreBuild_ztb.tcl > see &
+    end
+    cd $myDir
+    wait
+    foreach dir(work.*)
+        cd $myDir/$dir
+        if ( { grep -q 'Successful execution' zCoreBuild.log } ) then
+            echo "zCoreBuild Done  :" $dir      | tee -a $myDir/BE_status.log
+        else
+            echo "zCoreBuild Failed:" $dir      | tee -a $myDir/BE_status.log
+        endif
+    end
+endif
+cd $myDir
+if ( $runzPar == 1 ) then
+    if ( -f zPar.log ) then
+        mv zPar.log zPar.log.gori
+    endif
+    echo $GridCmd3 zPar zPar_zCui.tcl
+         $GridCmd3 zPar zPar_zCui.tcl
+    if ( { grep -q 'Successful execution' zPar.log } ) then
+        echo "zPar Done"                        | tee -a $myDir/BE_status.log
+    else
+        echo "zPar Failed"                      | tee -a $myDir/BE_status.log
+    endif
+endif
+cd $myDir
+if ( $runzTime == 1 ) then
+    if ( -f zTime.log ) then
+        mv zTime.log zTime.log.gori
+    endif
+    echo $GridCmd3 zTime zTime_zcui.tcl &
+         $GridCmd3 zTime zTime_zcui.tcl &
+endif
+cd $myDir
+if ( $runPDM == 1 || $runDAP == 1 ) then
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach PDMdir(F??.pdmdap)
+                cd $myDir/$Udir/$Mdir/$PDMdir
+                /bin/rm -rf see
+                if ( -f zNetgen.log ) then
+                    mv zNetgen.log zNetgen.log.gori
+                endif
+                echo $myDir/$Udir/$Mdir/$PDMdir
+                echo $GridCmd3 -N dap$Udir$Mdir$PDMdir zNetgen pdmdap.tcl
+                     $GridCmd3 -N dap$Udir$Mdir$PDMdir zNetgen pdmdap.tcl > see &
+            end
+        end
+    end
+    wait
+    cd $myDir
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach PDMdir(F??.pdmdap)
+                cd $myDir/$Udir/$Mdir/$PDMdir
+                if ( { grep -q 'Successful execution' zNetgen.log } ) then
+                    echo "PDMDAP Done  :" $Udir $Mdir $PDMdir       | tee -a $myDir/BE_status.log
+                else
+                    echo "PDMDAP Failed:" $Udir $Mdir $PDMdir       | tee -a $myDir/BE_status.log
+                endif
+            end
+        end
+    end
+    cd $myDir
+endif
+cd $myDir
+if ( $runPDM == 1 || $runPDMTiming == 1 ) then
+    if ( -f pdm_ztime.log ) then
+        mv pdm_ztime.log pdm_ztime.log.gori
+    endif
+    echo $GridCmd3 -N PDMTiming zTime PDMTiming_zCui.tcl -log pdm_ztime.log
+         $GridCmd3 -N PDMTiming zTime PDMTiming_zCui.tcl -log pdm_ztime.log
+    if ( { grep -q 'Successful execution' pdm_ztime.log } ) then
+        echo "PDMTiming Done"       | tee -a $myDir/BE_status.log
+    else
+        echo "PDMTiming Failed"     | tee -a $myDir/BE_status.log
+    endif
+endif
+cd $myDir
+if ( $runPnR == 1 ) then
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach SRCdir(F??.src)
+                cd $myDir/$Udir/$Mdir
+                set ORIdir = `echo $SRCdir | awk '{print substr($0, 0, 3)}'`.Original
+                if (! -d $ORIdir ) then
+                    cp -r $SRCdir $ORIdir
+                endif
+                cd $myDir/$Udir/$Mdir/$ORIdir
+                /bin/rm -rf see
+                if ( -f zNetgen.log ) then
+                    mv zNetgen.log zNetgen.log.gori
+                endif
+                echo $myDir/$Udir/$Mdir/$ORIdir
+                echo $GridCmd3 -N pnr$Udir$Mdir$ORIdir make -f design.mk
+                     $GridCmd3 -N pnr$Udir$Mdir$ORIdir make -f design.mk > see &
+            end
+        end
+    end
+    wait
+    cd $myDir
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach ORIdir(F??.Original)
+                cd $myDir/$Udir/$Mdir/$ORIdir
+                if ( { grep -q 'Successful execution' zNetgen.log } ) then
+                    if ( { grep -q 'ERROR in' vivado.log } ) then
+                        echo "PnR Failed:" $Udir $Mdir $ORIdir       | tee -a $myDir/BE_status.log
+                    else
+                        echo "PnR Done  :" $Udir $Mdir $ORIdir       | tee -a $myDir/BE_status.log
+                    endif
+                else
+                    echo "PnR Failed:" $Udir $Mdir $ORIdir       | tee -a $myDir/BE_status.log
+                endif
+            end
+        end
+    end
+    cd $myDir
+endif
+
+# End

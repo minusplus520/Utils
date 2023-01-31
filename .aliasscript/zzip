@@ -1,0 +1,22 @@
+#!/bin/csh
+
+if ( "$1" == "" ) then
+    echo "e.g.: zzip [filename]"
+    exit
+endif
+if ( ! -f "$1" ) then
+    echo "file:$1 not exist"
+    exit
+endif
+gzip $1
+
+set post=".zti"
+
+if ( "$2" != "" ) then
+    set post=".$2"
+    echo "Set suffix as $post"
+endif
+
+
+
+mv $1.gz $1$post

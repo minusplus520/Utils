@@ -1,0 +1,7 @@
+#!/bin/csh
+regrun -hw_type orion -product zebu -log /remote/vgzebuproj2/Orion_backend_shared/chiachh/reg/ -diff_file /remote/vgzebuproj2/Orion_backend_shared/chiachh/reg/diffs -use_stream_config TD.ZEBU
+
+
+# run failure list from previous run
+#regrun -product zebu -log 'pwd' -f r_......../tmp/failure_list
+

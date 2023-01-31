@@ -1,0 +1,118 @@
+#!/bin/tcsh
+# Modified from Eric
+
+#set GridCmd1="qrsh -P zebucae_brcm_eval  -l mem_free=128G -cwd -V -noshell -now no -verbose"
+#set GridCmd2="qrsh -P zebucae_brcm_eval  -l mem_free=64G -cwd -V -noshell -now no -verbose"
+
+source /remote/sge/default/zebutrain/common/settings.csh
+set GridCmd1 = "qrsh -P zebuDev_largeMem -l mem_free=256G -cwd -V -noshell -now n"
+set GridCmd2 = "qrsh -P zebuDev_largeMem -l mem_free=128G -cwd -V -noshell -now n"
+set GridCmd3 = "qrsh -P zebuDev -l mem_free=32G -cwd -V -noshell -now n"
+
+# Flow switch
+set runzTopB        = 1
+set runzCoreB       = 1
+set runzPar         = 1
+set runzTime        = 1
+set runPkgSG        = 1
+set runPaR          = 1
+set runzTimefpga    = 1
+
+# Initial Setting/Checking
+set myDir=`pwd`
+set db = "RTLDB"
+if ( ! -r "$db" ) then
+    echo "RTLDB not exist!"
+    exit
+endif
+
+if ( ! $?ZEBU_ROOT ) then
+    echo "ZEBU_ROOT not set!"
+    exit
+endif
+setenv LM_LICENSE_FILE ${LM_LICENSE_FILE}:26585@us01snpslmd2:26585@us01snpslmd3 # for Sinplify license
+
+# Dump Log
+/bin/rm -rf BE_status.log
+echo "BackEnd Flow switch:"             | tee -a BE_status.log
+echo "runzTopBuild :" $runzTopB         | tee -a BE_status.log
+echo "runzCoreBuild:" $runzCoreB        | tee -a BE_status.log
+echo "runzPar      :" $runzPar          | tee -a BE_status.log
+echo "runzTime     :" $runzTime         | tee -a BE_status.log
+echo "runPkgSG     :" $runPkgSG         | tee -a BE_status.log
+echo "runPaR       :" $runPaR           | tee -a BE_status.log
+echo "runTimefpga  :" $runzTimefpga     | tee -a BE_status.log
+
+# Start
+if ( $runzTopB == 1 ) then
+    echo $GridCmd1 zTopBuild zTopBuild.tcl
+    $GridCmd1 zTopBuild  zTopBuild.tcl
+endif
+if ( $runzCoreB == 1 ) then
+    foreach dir(work.*)
+        cd $myDir/$dir
+        /bin/rm -rf see
+        echo $GridCmd2 zCoreBuild zCoreBuild_ztb.tcl
+        $GridCmd2 zCoreBuild zCoreBuild_ztb.tcl > see &
+    end
+    cd $myDir
+    wait
+endif
+if ( $runzPar == 1 ) then
+    echo $GridCmd3 zPar zPar_zCui.tcl
+         $GridCmd3 zPar zPar_zCui.tcl
+endif
+if ( $runzTime == 1 ) then
+    echo $GridCmd3 zTime zTime_zcui.tcl
+         $GridCmd3 zTime zTime_zcui.tcl
+endif
+if ( $runPkgSG == 1 ) then
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach PKGdir(F??_F??.pkg)
+                cd $myDir/$Udir/$Mdir/$PKGdir
+                /bin/rm -rf see
+                echo $myDir/$Udir/$Mdir/$PKGdir
+                echo $GridCmd3 zNetgen design.tcl
+                     $GridCmd3 zNetgen pkglevelSG.tcl > see &
+            end
+        end
+    end
+    wait
+    cd $myDir
+endif
+if ( $runPaR == 1 ) then
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach Fdir(F??.src)
+                set base=`basename $Fdir .src`
+                cp -rf $Fdir $base.Original
+            end
+        end
+    end
+    cd $myDir
+    foreach Udir(U*)
+        cd $myDir/$Udir
+        foreach Mdir(M*)
+            cd $myDir/$Udir/$Mdir
+            foreach Fdir(F??.Original)
+                cd $myDir/$Udir/$Mdir/$Fdir
+                /bin/rm -rf see
+                echo $GridCmd3 make -f design.mk
+                     $GridCmd3 make -f design.mk > see &
+            end
+        end
+    end
+    wait
+    cd $myDir
+endif
+if ( $runzTimefpga == 1 ) then
+    echo $GridCmd3 zTime zTime_fpga_zcui.tcl
+         $GridCmd3 zTime zTime_fpga_zcui.tcl
+endif
+
+# End
